@@ -54,16 +54,20 @@ git clone https://github.com/anuragverse/InvoAI.git
 Then:
 
 cd InvoAI
-Backend Setup
+
+###Backend Setup
 2. Open the Backend Folder
 cd backend
+
 3. Create a Virtual Environment
 python -m venv venv
+
 4. Activate the Virtual Environment
 Windows PowerShell
 .\venv\Scripts\Activate.ps1
 Windows CMD
 venv\Scripts\activate
+
 macOS / Linux
 source venv/bin/activate
 
@@ -71,6 +75,7 @@ You should see (venv) in your terminal after activation.
 
 5. Install Dependencies
 pip install -r requirements.txt
+
 6. Add Your Gemini API Key
 
 Create a file named:
@@ -85,8 +90,6 @@ GEMINI_API_KEY=YOUR_GEMINI_API_KEY
 
 Replace YOUR_GEMINI_API_KEY with your actual Gemini API key.
 
-Do not upload your .env file to GitHub.
-
 7. Start the Backend
 
 Run:
@@ -97,6 +100,7 @@ The backend will run at:
 
 http://127.0.0.1:8000
 Frontend Setup
+
 8. Open a New Terminal
 
 Keep the backend running.
@@ -104,8 +108,10 @@ Keep the backend running.
 Open another terminal and go to the project folder:
 
 cd InvoAI/frontend
+
 9. Install Frontend Dependencies
 npm install
+
 10. Start the Frontend
 npm run dev
 
@@ -137,7 +143,7 @@ Then open:
 
 http://localhost:5173
 
-How to Use
+#SHow to Use
 Open InvoAI in your browser.
 Upload an invoice PDF.
 Wait for the invoice information to be extracted.
