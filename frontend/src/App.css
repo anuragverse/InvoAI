@@ -1,0 +1,274 @@
+/* -----------------------------
+   Global Styles
+----------------------------- */
+
+body{
+    margin:0;
+    font-family:Arial, Helvetica, sans-serif;
+    background:#F4F7FC;
+}
+
+/* -----------------------------
+   Main Container
+----------------------------- */
+
+.container{
+    max-width:1000px;
+    margin:auto;
+    padding:40px 20px;
+}
+
+/* -----------------------------
+   Header
+----------------------------- */
+
+.header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    margin-bottom: 35px;
+}
+
+.brand-logo {
+    width: 420px;
+    max-width: 90%;
+    height: auto;
+    display: block;
+}
+
+.header h1{
+    margin:0;
+    font-size:38px;
+    color:#2563EB;
+}
+
+
+
+/* -----------------------------
+   Cards
+----------------------------- */
+
+.card{
+    background:white;
+    border-radius:12px;
+    padding:25px;
+    margin-bottom:25px;
+
+    box-shadow:0 4px 12px rgba(0,0,0,.08);
+}
+
+.card h2{
+    margin-top:0;
+    color:#1F2937;
+}
+
+/* -----------------------------
+   Upload Section
+----------------------------- */
+
+.upload-box{
+    border:2px dashed #2563EB;
+    border-radius:12px;
+    padding:40px;
+    text-align:center;
+    background:#F8FAFF;
+    margin:20px 0;
+}
+
+.upload-box p{
+    margin:10px;
+    color:#555;
+}
+
+.browse-btn{
+    display:inline-block;
+    margin-top:15px;
+    background:#2563EB;
+    color:white;
+    padding:10px 18px;
+    border-radius:8px;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+.browse-btn:hover{
+    background:#1D4ED8;
+}
+
+/* -----------------------------
+   Selected File
+----------------------------- */
+
+.selected-file{
+    margin-top:18px;
+    color:#2563EB;
+    font-weight:bold;
+    font-size:15px;
+}
+
+/* -----------------------------
+   Buttons
+----------------------------- */
+
+.upload-btn{
+    width:100%;
+    margin-top:15px;
+
+    background:#2563EB;
+    color:white;
+
+    border:none;
+    border-radius:8px;
+
+    padding:14px;
+
+    font-size:17px;
+    font-weight:bold;
+
+    cursor:pointer;
+
+    transition:0.3s;
+}
+
+.upload-btn:hover{
+    background:#1D4ED8;
+}
+
+/* -----------------------------
+   Question Input
+----------------------------- */
+
+input[type="text"]{
+
+    width:100%;
+
+    padding:14px;
+
+    border-radius:8px;
+
+    border:1px solid #D1D5DB;
+
+    font-size:16px;
+
+    margin-top:15px;
+
+    margin-bottom:15px;
+
+    box-sizing:border-box;
+
+    outline:none;
+}
+
+input[type="text"]:focus{
+
+    border-color:#2563EB;
+
+}
+
+/* -----------------------------
+   Invoice Preview
+----------------------------- */
+
+.invoice-preview{
+
+    background:#F8FAFC;
+
+    border:1px solid #D1D5DB;
+
+    border-radius:12px;
+
+    padding:20px;
+
+    max-height:450px;
+
+    overflow-y:auto;
+
+    box-shadow:inset 0 1px 3px rgba(0,0,0,.05);
+
+}
+
+.invoice-preview pre{
+
+    margin:0;
+
+    white-space:pre-wrap;
+
+    word-wrap:break-word;
+
+    font-family:Consolas,"Courier New",monospace;
+
+    font-size:15px;
+
+    line-height:1.8;
+
+    color:#374151;
+
+}
+
+/* -----------------------------
+   Response Box
+----------------------------- */
+
+.response-box{
+
+    margin-top:15px;
+
+    padding:20px;
+
+    background:#F8FAFC;
+
+    border-left:5px solid #2563EB;
+
+    border-radius:10px;
+
+    min-height:80px;
+
+    line-height:1.8;
+
+    color:#374151;
+
+    font-size:16px;
+
+}
+
+.response-box p{
+
+    margin:0;
+
+}
+
+/* -----------------------------
+   Responsive Design
+----------------------------- */
+
+@media (max-width:768px){
+
+    .container{
+
+        padding:20px;
+
+    }
+
+    .logo{
+
+        width:65px;
+        height:65px;
+        font-size:30px;
+
+    }
+
+    .header h1{
+
+        font-size:30px;
+
+    }
+
+    .subtitle{
+
+        font-size:16px;
+
+    }
+
+}
