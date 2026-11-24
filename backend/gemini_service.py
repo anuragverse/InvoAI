@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 
 from dotenv import load_dotenv
 from google import genai
@@ -60,6 +61,24 @@ def _get_client():
     return _client
 
 
+def _config_for(model):
+    """Generation settings for one model.
+
+    Answering from an invoice is simple lookup work, so "thinking" is switched off on the
+    2.5 Flash models, where it is on by default and adds several seconds to every answer.
+    """
+    options = {
+        "system_instruction": SYSTEM_INSTRUCTION,
+        "temperature": 0.2,
+        "max_output_tokens": 1024,
+    }
+
+    if model.startswith("gemini-2.5-flash"):
+        options["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
+
+    return types.GenerateContentConfig(**options)
+
+
 def ask_gemini(text, question):
     """Answer a question about the invoice text. Raises GeminiError on failure."""
     global _preferred_model
@@ -71,11 +90,6 @@ def ask_gemini(text, question):
         models = [_preferred_model] + [m for m in models if m != _preferred_model]
 
     contents = f"<invoice>\n{text}\n</invoice>\n\nQuestion: {question}"
-    config = types.GenerateContentConfig(
-        system_instruction=SYSTEM_INSTRUCTION,
-        temperature=0.2,
-        max_output_tokens=1024,
-    )
 
     last_code = None
     last_model = None
@@ -83,7 +97,11 @@ def ask_gemini(text, question):
 
     for model in models:
         try:
-            response = client.models.generate_content(model=model, contents=contents, config=config)
+            started = time.monotonic()
+            response = client.models.generate_content(
+                model=model, contents=contents, config=_config_for(model)
+            )
+            log.info("Gemini %s answered in %.1fs", model, time.monotonic() - started)
         except errors.APIError as error:
             code = getattr(error, "code", None)
             detail = " ".join(str(getattr(error, "message", "") or error).split())[:300]
