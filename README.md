@@ -13,6 +13,8 @@ InvoAI is an AI-powered invoice analysis application that allows users to upload
 * FastAPI backend for invoice processing
 * React frontend for the user interface
 * Interactive API documentation with Swagger UI
+* Each visitor's invoice is kept in its own session, so invoices are never shared between users
+* Upload limits (PDF only, size and page limits) and rate limiting to protect the API quota
 
 ---
 
@@ -31,7 +33,8 @@ InvoAI is an AI-powered invoice analysis application that allows users to upload
 * FastAPI
 * Uvicorn
 * PyPDF2
-* Google Gemini API
+* Google Gemini API (`google-genai` SDK)
+* PyMuPDF for PDF text extraction
 
 
 ---
@@ -45,8 +48,10 @@ InvoAI/
 │   ├── app.py
 │   ├── gemini_service.py
 │   ├── pdf_reader.py
+│   ├── store.py
+│   ├── tests/
 │   ├── requirements.txt
-│   └── .env
+│   └── .env            (you create this)
 │
 ├── frontend/
 │   ├── src/
@@ -152,6 +157,7 @@ backend/
 ├── app.py
 ├── gemini_service.py
 ├── pdf_reader.py
+├── store.py
 ├── requirements.txt
 └── .env
 ```
@@ -176,7 +182,8 @@ Run:
 python -m uvicorn app:app --reload
 ```
 
-The backend will start.
+The backend starts at `http://127.0.0.1:8000`. Interactive API docs are at `http://127.0.0.1:8000/docs`.
+
 ---
 
 # Frontend Setup
@@ -186,12 +193,6 @@ The backend will start.
 Keep the backend terminal running.
 
 Open a second terminal and navigate to the frontend directory:
-
-```bash
-cd InvoAI/frontend
-```
-
-If you are starting from outside the project directory:
 
 ```bash
 cd InvoAI/frontend
@@ -287,14 +288,64 @@ User
 
 # Environment Variables
 
-The backend requires the following environment variable:
+## Backend (`backend/.env`)
 
-| Variable         | Description                                                |
-| ---------------- | ---------------------------------------------------------- |
-| `GEMINI_API_KEY` | Google Gemini API key used for AI-powered invoice analysis |
+| Variable         | Required | Description |
+| ---------------- | -------- | ----------- |
+| `GEMINI_API_KEY` | Yes      | Google Gemini API key |
+| `CLIENT_URL`     | In production | Frontend URL(s) allowed to call the API (comma separated, no trailing slash). Defaults to `http://localhost:5173` |
+| `GEMINI_MODEL`   | No       | Comma-separated list of Gemini models to try in order. The defaults are tried automatically, so a retired model does not break the app |
+| `MAX_UPLOAD_MB`, `MAX_PAGES`, `MAX_TEXT_CHARS` | No | Upload limits (defaults: 10 MB, 30 pages, 60,000 characters) |
+| `UPLOADS_PER_10_MIN`, `ASKS_PER_10_MIN` | No | Per-visitor rate limits (defaults: 10 and 30) |
+
+See `backend/.env.example`.
+
+## Frontend (`frontend/.env`)
+
+| Variable       | Description |
+| -------------- | ----------- |
+| `VITE_API_URL` | Backend URL, no trailing slash. Leave empty locally (defaults to `http://127.0.0.1:8000`) |
 
 ---
 
+# API
+
+| Method | Path      | Description |
+| ------ | --------- | ----------- |
+| `GET`  | `/health` | Health check |
+| `POST` | `/upload` | Multipart upload of a PDF (`file`). Returns `session_id`, `filename`, `pages`, `text` |
+| `POST` | `/ask`    | JSON body `{ "question": "...", "session_id": "..." }`. Returns `{ "question", "answer" }` |
+
+Errors are returned as `{ "detail": "message" }` with a suitable status code (400 invalid file, 404 expired session, 413 too large, 422 no text found, 429 rate limited, 503 AI unavailable).
+
+Scanned (image-only) PDFs are not supported yet because they contain no text layer.
+
+---
+
+# Running the Tests
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+python -m pytest
+```
+
+The tests do not call the real Gemini API.
+
+---
+
+# Deployment
+
+The backend runs on **Render** (free plan) and the frontend on **Vercel**.
+
+1. **Backend on Render:** *New -> Blueprint*, choose this repository (it reads `render.yaml`). Set `GEMINI_API_KEY`, and set `CLIENT_URL` to your Vercel URL once you have it. Check `https://<your-service>.onrender.com/health`.
+2. **Frontend on Vercel:** import the repository, set **Root Directory** to `frontend`, and add `VITE_API_URL` with your Render URL (no trailing slash).
+3. Update `CLIENT_URL` on Render with the final Vercel URL.
+4. After changing `VITE_API_URL`, **redeploy** the frontend, because Vite reads it at build time.
+
+Render's free plan sleeps after about 15 minutes without traffic, so the first request can take up to a minute.
+
+---
 
 # License
 

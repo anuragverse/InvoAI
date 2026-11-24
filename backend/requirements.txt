@@ -1,7 +1,6 @@
-fastapi
-uvicorn
-python-multipart
-python-dotenv
-google-generativeai
-pymupdf
-
+fastapi>=0.115
+uvicorn>=0.30
+python-multipart>=0.0.9
+python-dotenv>=1.0
+google-genai>=1.0
+pymupdf>=1.24.3

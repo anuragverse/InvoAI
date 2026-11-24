@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: invoai-api
+    runtime: python
+    region: singapore
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      # Your Vercel URL, e.g. https://invoai.vercel.app (no trailing slash)
+      - key: CLIENT_URL
+        sync: false
