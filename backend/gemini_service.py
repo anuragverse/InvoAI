@@ -14,9 +14,12 @@ log = logging.getLogger("invoai.gemini")
 # served to existing users), so a model that is missing, overloaded or rejects the
 # request simply moves on to the next one. The one that works is remembered.
 # Override with GEMINI_MODEL="model-a,model-b" in the environment.
-DEFAULT_MODELS = "gemini-2.5-flash,gemini-3.6-flash,gemini-3.5-flash-lite,gemini-3.1-flash-lite"
+DEFAULT_MODELS = "gemini-2.5-flash,gemini-3.6-flash,gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-2.5-flash-lite"
 
 REQUEST_TIMEOUT_MS = 40_000
+
+# Pauses (seconds) between rounds when every model reports "high demand"
+RETRY_PAUSES = (2, 4)
 
 SYSTEM_INSTRUCTION = """You are an AI Invoice Assistant.
 
@@ -95,51 +98,66 @@ def ask_gemini(text, question):
     last_model = None
     last_detail = ""
 
-    for model in models:
-        try:
-            started = time.monotonic()
-            response = client.models.generate_content(
-                model=model, contents=contents, config=_config_for(model)
-            )
-            log.info("Gemini %s answered in %.1fs", model, time.monotonic() - started)
-        except errors.APIError as error:
-            code = getattr(error, "code", None)
-            detail = " ".join(str(getattr(error, "message", "") or error).split())[:300]
-            log.warning("Gemini model %s failed with %s: %s", model, code, detail)
+    for pause in (*RETRY_PAUSES, None):
+        overloaded = False
 
-            last_code, last_model, last_detail = code, model, detail
+        for model in models:
+            try:
+                started = time.monotonic()
+                response = client.models.generate_content(
+                    model=model, contents=contents, config=_config_for(model)
+                )
+                log.info("Gemini %s answered in %.1fs", model, time.monotonic() - started)
+            except errors.APIError as error:
+                code = getattr(error, "code", None)
+                detail = " ".join(str(getattr(error, "message", "") or error).split())[:300]
+                log.warning("Gemini model %s failed with %s: %s", model, code, detail)
 
-            # Model retired, not offered to this key, or temporarily overloaded: try the next one
-            if code in (404, 500, 503, 504) or (code == 403 and "model" in detail.lower()):
+                last_code, last_model, last_detail = code, model, detail
+
+                # Model retired, not offered to this key, or temporarily overloaded: try the next one
+                if code in (500, 503, 504):
+                    overloaded = True
+                    continue
+
+                if code == 404 or (code == 403 and "model" in detail.lower()):
+                    continue
+
+                if code == 429:
+                    raise GeminiError(
+                        "The AI service is busy right now (quota reached). Please try again in a minute.",
+                        503,
+                    )
+
+                if code in (400, 401, 403) and ("api key" in detail.lower() or code in (401, 403)):
+                    raise GeminiError(
+                        "The Gemini API key was rejected. Check GEMINI_API_KEY on the server "
+                        "(it may be wrong, expired, restricted, or missing access to the Gemini API).",
+                        503,
+                    )
+
+                # Some other rejection (for example a model that does not accept a setting):
+                # try the next model before giving up
                 continue
+            except Exception as error:
+                log.warning("Gemini request failed: %s", error)
+                raise GeminiError("Could not reach the AI service. Please try again.", 502)
 
-            if code == 429:
-                raise GeminiError(
-                    "The AI service is busy right now (quota reached). Please try again in a minute.",
-                    503,
-                )
+            _preferred_model = model
+            answer = (getattr(response, "text", None) or "").strip()
 
-            if code in (400, 401, 403) and ("api key" in detail.lower() or code in (401, 403)):
-                raise GeminiError(
-                    "The Gemini API key was rejected. Check GEMINI_API_KEY on the server "
-                    "(it may be wrong, expired, restricted, or missing access to the Gemini API).",
-                    503,
-                )
+            if not answer:
+                return "The AI could not produce an answer for that question. Try rephrasing it."
 
-            # Some other rejection (for example a model that does not accept a setting):
-            # try the next model before giving up
+            return answer
+
+        # Every model was busy: demand spikes are short, so wait a moment and go round again
+        if overloaded and pause is not None:
+            log.info("Gemini is busy, retrying in %ss", pause)
+            time.sleep(pause)
             continue
-        except Exception as error:
-            log.warning("Gemini request failed: %s", error)
-            raise GeminiError("Could not reach the AI service. Please try again.", 502)
 
-        _preferred_model = model
-        answer = (getattr(response, "text", None) or "").strip()
-
-        if not answer:
-            return "The AI could not produce an answer for that question. Try rephrasing it."
-
-        return answer
+        break
 
     log.error("No Gemini model worked (last tried %s, last status %s)", last_model, last_code)
 
